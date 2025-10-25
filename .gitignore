@@ -103,3 +103,5 @@ data/*
 outputs/
 wandb/
 checkpoints/
+# Local reference files
+Instructions.md
