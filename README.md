@@ -133,7 +133,7 @@ a variant-analysis toolkit; if not, we pivot with a clear conscience.
 
 11. Next step – hyperparameter tuning
     ```bash
-    WANDB_MODE=offline DISABLE_COMPILE=1 \
+    WANDB_DISABLED=true TINYVARIANT_NUM_WORKERS=0 DISABLE_COMPILE=1 \
     python pretrain.py --config-name clinvar_sweep --multirun
 
     python scripts/analyze_sweep.py

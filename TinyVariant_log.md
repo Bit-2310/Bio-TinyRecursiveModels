@@ -166,3 +166,7 @@
 - Rebuilt TRM dataset with `--provenance-ablation` (submitter/evaluation buckets set to the lowest bucket).
 - TRM run `clinvar_long_provenance_ablation_20251025-074717` (WANDB offline, single-worker loader) completed full schedule; eval accuracy 0.8755, ROC AUC 0.9438.
 - Evaluated checkpoint `step_15620` on CPU → metrics in `outputs/clinvar_long_provenance_ablation_20251025-074717_metrics.json`, predictions in `_predictions.jsonl`.
+
+2025-10-25, 17:45 : Sweep preparation
+- Added explicit `run_name` / `checkpoint_path` templating to `config/clinvar_sweep.yaml` so each Hydra job writes to its own folder (`checkpoints/Clinvar_trm-ACT-torch/<override_dirname>`).
+- README now documents the sweep command with `WANDB_DISABLED=true` and `TINYVARIANT_NUM_WORKERS=0` for smoother offline runs.
