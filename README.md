@@ -11,6 +11,12 @@ bioinformatics proof of concept on top.
 
 **Objective — test whether the Tiny Recursive Model’s halting/recursion stack helps ClinVar pathogenicity prediction. Final result (Oct 2025): logistic regression still wins (ROC AUC 0.959 / accuracy 0.896) while the best TRM run trails slightly (ROC AUC 0.951 / accuracy 0.887, ~17 M params).**
 
+Along the way we proved a few things:
+
+- The TRM architecture can be repurposed from ARC puzzles to real ClinVar data on commodity hardware (RTX 3050, 4 GB VRAM).
+- A fully reproducible 100 k-variant pipeline (phenotypes, provenance, ablations, Hydra sweep tooling) fits in an open repo.
+- Careful evaluation sometimes says “stick with the simple model” — and that clarity is a positive outcome.
+
 > The core training loop, halting logic, and attention layout follow Samsung
 > SAIT Montréal’s Tiny Recursive Models. We keep their architecture intact
 > and swap the ARC puzzle inputs for ClinVar-derived feature tokens.
@@ -29,15 +35,15 @@ a variant-analysis toolkit; if not, we pivot with a clear conscience.
 | TRM — phenotype ablation | 0.942 | 0.874 | Phenotype tokens collapsed to `<none>` |
 | TRM — provenance ablation | 0.944 | 0.875 | Submitter/evaluation buckets neutralised |
 
-The takeaway: the recursive reasoning stack ports successfully, but on ClinVar missense classification the linear baseline remains stronger. Recursion adds complexity without measurable gains.
+The takeaway: the recursive reasoning stack ports successfully, but on ClinVar missense classification the linear baseline remains stronger. Recursion adds complexity without measurable gains — an insight that helps us focus effort where this architecture is likelier to shine.
 
 ## Where things stand right now
 
 - ClinVar 50 k-per-class dataset (≈100 k total variants) is reproducible via the provided prep scripts; details live in `TinyVariant_log.md`.
-- The logistic regression baseline remains the top performer on the current feature bundle (ROC AUC 0.959 / accuracy 0.896).
+- The logistic regression baseline remains the top performer on the current feature bundle (ROC AUC 0.959 / accuracy 0.896), giving us a strong yardstick for future ideas.
 - The best TinyVariant/TRM configuration from the Hydra sweep keeps recursion shallow: `hidden_size=384`, `L_layers=2`, `L_cycles=2`, `lr=3e-4`, converging at ROC AUC 0.951 / accuracy 0.887 with ~17 M parameters.
 - Phenotype and provenance ablations only dip a few points, suggesting the TRM encoder captures useful signal but the recursion/halting loop adds little over a single pass.
-- Documentation, plots (`docs/figures/`), and logs now capture the negative result so we can pivot or publish without ambiguity.
+- Documentation, plots (`docs/figures/`), and logs now capture the negative result so we can pivot or publish with confidence and share the findings transparently.
 
 ---
 
@@ -161,7 +167,7 @@ The takeaway: the recursive reasoning stack ports successfully, but on ClinVar m
 
 ## What’s next?
 
-- **Documentation** — this repository now records a negative result: TRM-style recursion failed to outperform a linear baseline on ClinVar missense pathogenicity. Consider packaging the story as a short write-up or blog post.
+- **Documentation** — this repository now records a clear result: TRM-style recursion did not outperform a linear baseline on ClinVar missense pathogenicity, and the full path to that conclusion is ready to share (perfect material for a blog post or case study).
 - **Analysis ideas** — explore per-phenotype / per-gene error slices, temporal hold-out splits, or calibration curves if you want to squeeze more insight out of the data before pivoting.
 - **Future hypotheses** — aim the recursion core at problems that genuinely need multi-step reasoning (iterative diagnosis, causal graph tracing, puzzle-like variant annotation) or experiment with hybrid encoders that keep the feature pipeline but drop halting.
 
