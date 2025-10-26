@@ -13,7 +13,7 @@ try:
 except ImportError:  # optional plotting dependencies
     pd = sns = plt = None
 
-import yaml
+from omegaconf import OmegaConf
 
 SWEEP_ROOT = Path("checkpoints/Clinvar_trm-ACT-torch")
 OUTPUT_FIG = Path("docs/figures/clinvar_sweep_heatmap.png")
@@ -25,7 +25,7 @@ def load_run_metrics(run_dir: Path) -> dict:
         metrics = json.loads(metrics_file.read_text())
     else:
         metrics = {}
-    cfg = yaml.safe_load((run_dir / "all_config.yaml").read_text())
+    cfg = OmegaConf.load(run_dir / "all_config.yaml")
 
     roc_auc = metrics.get("ClinVar/roc_auc")
     if roc_auc is None:
@@ -41,10 +41,10 @@ def load_run_metrics(run_dir: Path) -> dict:
         "run": run_dir.name,
         "roc_auc": roc_auc,
         "accuracy": accuracy,
-        "hidden_size": cfg["arch"]["hidden_size"],
-        "L_layers": cfg["arch"]["L_layers"],
-        "L_cycles": cfg["arch"]["L_cycles"],
-        "lr": cfg["lr"],
+        "hidden_size": cfg.arch.hidden_size,
+        "L_layers": cfg.arch.L_layers,
+        "L_cycles": cfg.arch.L_cycles,
+        "lr": cfg.lr,
         "checkpoint": latest_checkpoint,
         "config": str(run_dir / "all_config.yaml"),
     }
