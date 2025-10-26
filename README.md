@@ -9,7 +9,7 @@ biological: guessing whether a DNA variant is pathogenic. Rather than rewrite
 everything from scratch, I’m keeping the original TRM plumbing and layering a
 bioinformatics proof of concept on top.
 
-**Objective — break 60 % accuracy (now ~0.887) on ClinVar pathogenic vs benign classification with an RTX 3050.**
+**Objective — test whether the Tiny Recursive Model’s halting/recursion stack helps ClinVar pathogenicity prediction. Final result (Oct 2025): logistic regression still wins (ROC AUC 0.959 / accuracy 0.896) while the best TRM run trails slightly (ROC AUC 0.951 / accuracy 0.887, ~17 M params).**
 
 > The core training loop, halting logic, and attention layout follow Samsung
 > SAIT Montréal’s Tiny Recursive Models. We keep their architecture intact
@@ -20,14 +20,24 @@ a variant-analysis toolkit; if not, we pivot with a clear conscience.
 
 ---
 
+## Key results
+
+| Model / dataset slice | ROC AUC | Accuracy | Notes |
+|-----------------------|--------:|---------:|-------|
+| Logistic regression (baseline) | **0.959** | **0.896** | 80 k / 20 k train-test split, scikit-learn, one-hot + standard scaling |
+| TRM (hidden_size 384, L_layers 2, L_cycles 2, lr 3e-4) | 0.951 | 0.887 | 17 M params, 2×2 recursion cycles; halting retained but delivers no uplift |
+| TRM — phenotype ablation | 0.942 | 0.874 | Phenotype tokens collapsed to `<none>` |
+| TRM — provenance ablation | 0.944 | 0.875 | Submitter/evaluation buckets neutralised |
+
+The takeaway: the recursive reasoning stack ports successfully, but on ClinVar missense classification the linear baseline remains stronger. Recursion adds complexity without measurable gains.
+
 ## Where things stand right now
 
-- Confirmed the base TRM code runs locally (no more adam-atan2 headaches).
-- Built a mini ARC dataset (800 puzzles) to make sure the training loop,
-  logging, and checkpointing play nicely with 4 GB of VRAM.
-- Logged the whole bring-up story in `biotrm_progress_log.txt`.
-- Next up: swap in ClinVar data, craft a VariantTRM model, and push for that
-  60 % accuracy milestone.
+- ClinVar 50 k-per-class dataset (≈100 k total variants) is reproducible via the provided prep scripts; details live in `TinyVariant_log.md`.
+- The logistic regression baseline remains the top performer on the current feature bundle (ROC AUC 0.959 / accuracy 0.896).
+- The best TinyVariant/TRM configuration from the Hydra sweep keeps recursion shallow: `hidden_size=384`, `L_layers=2`, `L_cycles=2`, `lr=3e-4`, converging at ROC AUC 0.951 / accuracy 0.887 with ~17 M parameters.
+- Phenotype and provenance ablations only dip a few points, suggesting the TRM encoder captures useful signal but the recursion/halting loop adds little over a single pass.
+- Documentation, plots (`docs/figures/`), and logs now capture the negative result so we can pivot or publish without ambiguity.
 
 ---
 
@@ -46,7 +56,7 @@ a variant-analysis toolkit; if not, we pivot with a clear conscience.
        --test-set-name evaluation \
        --num-aug 0
    ```
-3. Run the trimmed TRM config that fits on the RTX 3050:
+3. (Optional sanity) Run the trimmed TRM config that fits on the RTX 3050:
    ```bash
    DISABLE_COMPILE=1 python pretrain.py \
        arch=trm \
@@ -58,7 +68,7 @@ a variant-analysis toolkit; if not, we pivot with a clear conscience.
        arch.L_layers=1 arch.L_cycles=2 arch.H_cycles=1 \
        +run_name=debug_run_tiny
    ```
-   You’ll see WandB logs and a checkpoint under `checkpoints/`.
+   You’ll see WandB logs and a checkpoint under `checkpoints/`. This just verifies the TRM plumbing; it is no longer a project milestone.
 
 4. Rebuild the ClinVar dataset with phenotype/provenance context (5 k per class by default) and train the VariantTRM run (50 epochs, evaluator logs every 5 epochs):
    ```bash
@@ -72,7 +82,7 @@ a variant-analysis toolkit; if not, we pivot with a clear conscience.
    Add `+early_stop_patience=5` (and optional `+early_stop_metric`) to enable early stopping once the validation ROC AUC plateaus.  
    Variant sequences now contain 25 tokens covering gene/allele features, three phenotype buckets, evidence sources, submitter/evaluation buckets, five position digits, and a label slot.
 
-5. Baseline comparison (logistic regression on the same split):
+5. Baseline comparison (logistic regression on the same split — still the strongest performer):
    ```bash
    python tools/train_baseline_logreg.py \
        --input data/clinvar/processed/clinvar_missense_balanced.tsv \
@@ -85,7 +95,7 @@ a variant-analysis toolkit; if not, we pivot with a clear conscience.
    ```
    (Requires the balanced ClinVar TSV under `data/clinvar/processed/clinvar_missense_balanced.tsv`.)
 
-7. Evaluate checkpoints (CPU or CUDA):
+7. Evaluate checkpoints (CPU or CUDA — pick manually until the scripts learn to fall back automatically):
    ```bash
    python tools/evaluate_clinvar_checkpoint.py \
        --config checkpoints/Clinvar_trm-ACT-torch/clinvar_long_20251024-175518/all_config.yaml \
@@ -126,14 +136,14 @@ a variant-analysis toolkit; if not, we pivot with a clear conscience.
     ```
     Expect longer preprocessing/training time and higher disk usage when increasing `--max-per-class`.
 
-11. Next step – hyperparameter tuning
+11. Hyperparameter sweep (used to find the 384 / 2×2 / 3e‑4 setting)
     ```bash
     WANDB_DISABLED=true TINYVARIANT_NUM_WORKERS=0 DISABLE_COMPILE=1 \
     python pretrain.py --config-name clinvar_sweep --multirun
 
     python scripts/analyze_sweep.py
     ```
-    Review `sweep_summary.csv` to identify stronger architectures (wider hidden size, deeper L_cycles) for the 50k dataset. Current best (Oct 2025): hidden_size=384, L_layers=2, L_cycles=2, lr=3e-4 → ROC AUC ≈ 0.951, accuracy ≈ 0.887, ~17M parameters (clinvar_long_best384_20251026-140402).
+    Review `sweep_summary.csv` and the generated heatmap (`docs/figures/clinvar_sweep_heatmap.png`). The best configuration so far keeps recursion shallow: hidden_size=384, L_layers=2, L_cycles=2, lr=3e-4 → ROC AUC ≈ 0.951, accuracy ≈ 0.887 (~17 M parameters, run `clinvar_long_best384_20251026-140402`).
 
 12. Further analysis (optional)
     - **Feature ablation comparison** – after running phenotype/provenance ablations, compare `outputs/*_metrics.json` files to quantify each feature family’s contribution.
@@ -146,56 +156,13 @@ a variant-analysis toolkit; if not, we pivot with a clear conscience.
       ```
       ![TRM Ablation Comparison](docs/figures/clinvar_trm_ablation_comparison.png)
     - **Per-variant inspection** – use `tools/evaluate_clinvar_checkpoint.py --save-preds` to slice predictions by phenotype, gene, or review status.
-   ```bash
-   WANDB_MODE=offline DISABLE_COMPILE=1 \
-   python pretrain.py --config-name clinvar_sweep --multirun
-   python scripts/analyze_sweep.py
-   ```
-   (Sweeps hidden size, L_layers, L_cycles, and learning rate; each run is stored under
-   `checkpoints/Clinvar_trm-ACT-torch/<override_dirname>`.)
 
 ---
 
-## Roadmap snapshot
+## What’s next?
 
-1. **ClinVar data prep** — download, filter to missense variants, create a
-   5 k example dataset (2.5 k pathogenic / 2.5 k benign).
-2. **VariantTRM** — adapt the TRM core for binary classification with lightweight
-   embeddings (position, ref/alt, gene).
-3. **Training loop** — start with tiny batches, mixed precision if needed, and
-   push toward >60 % accuracy.
-4. **Baselines & comparisons** — logistic regression, MLP, random forest.
-5. **Decision time** — if recursion helps and metrics are encouraging, polish
-   for a write-up; if not, pivot to the next biology challenge.
+- **Documentation** — this repository now records a negative result: TRM-style recursion failed to outperform a linear baseline on ClinVar missense pathogenicity. Consider packaging the story as a short write-up or blog post.
+- **Analysis ideas** — explore per-phenotype / per-gene error slices, temporal hold-out splits, or calibration curves if you want to squeeze more insight out of the data before pivoting.
+- **Future hypotheses** — aim the recursion core at problems that genuinely need multi-step reasoning (iterative diagnosis, causal graph tracing, puzzle-like variant annotation) or experiment with hybrid encoders that keep the feature pipeline but drop halting.
 
-Detailed steps live in the TinyVariant proof-of-concept plan (see below).
-
----
-
-## Files to watch
-
-- `biotrm_progress_log.txt` — running commentary of everything that’s been
-  tried and learned so far.
-- `data/arc1concept-mini/` — tiny ARC dataset used for sanity checks.
-- `biotrm/` (coming soon) — home for TinyVariant-specific data and model code.
-
----
-
-## Long-form plan
-
-For the full breakdown of tasks, success metrics, and deliverables, see the
-TinyVariant POC plan in the repo. Highlights:
-
-```
-Phase 1  Setup & ClinVar data ingestion
-Phase 2  Minimal VariantTRM model + training loop
-Phase 3  Feature upgrades & hyperparameter search
-Phase 4  Baselines, ablations, error analysis
-Phase 5  Documentation + go/no-go decision
-```
-
----
-
-Questions, ideas, or words of caution? Pop them into the issue tracker (once
-the repo rename to `TinyVariant` lands) or reach out directly. This is very
-much a lab notebook in motion. Stay tuned for updates.
+Questions, ideas, or words of caution? Pop them into the issue tracker or reach out directly. Thanks for following the TinyVariant proof-of-concept all the way to its conclusion.

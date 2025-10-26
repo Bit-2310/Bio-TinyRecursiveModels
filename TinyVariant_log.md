@@ -179,3 +179,8 @@
 2025-10-25, 17:45 : Sweep preparation
 - Added explicit `run_name` / `checkpoint_path` templating to `config/clinvar_sweep.yaml` so each Hydra job writes to its own folder (`checkpoints/Clinvar_trm-ACT-torch/<override_dirname>`).
 - README now documents the sweep command with `WANDB_DISABLED=true` and `TINYVARIANT_NUM_WORKERS=0` for smoother offline runs.
+
+2025-10-26, 17:10 : Documentation wrap-up & hypothesis outcome
+- Updated `README.md` with a key results table, clarified that the logistic regression baseline (ROC AUC 0.959 / accuracy 0.896) remains ahead of the best TRM run (ROC AUC 0.951 / accuracy 0.887, ~17 M params, hidden_size 384, 2×2 cycles).
+- Added context that phenotype/provenance ablations barely dent performance, reinforcing that the recursive halting core adds little for ClinVar missense classification.
+- Closed out the README with next-step ideas (write-up, error slicing, new hypotheses) and captured the negative result so this proof of concept can be considered complete.
