@@ -37,10 +37,13 @@ def main() -> None:
     pattern = re.compile(r"arch.L_cycles=(\d+),arch.L_layers=(\d+),arch.hidden_size=(\d+),lr=([0-9.]+e?-?[0-9]*)")
     run_dirs = sorted(args.root.glob("arch.L_cycles=*"))
 
-    for run_dir in run_dirs:
+    total = len(run_dirs)
+    completed = 0
+
+    for idx, run_dir in enumerate(run_dirs, start=1):
         match = pattern.fullmatch(run_dir.name)
         if not match:
-            print(f"Skipping {run_dir}")
+            print(f"[{idx}/{total}] Skipping {run_dir.name} (unexpected directory name)")
             continue
 
         L_cycles, L_layers, hidden_size, lr = match.groups()
@@ -61,7 +64,8 @@ def main() -> None:
         checkpoint = checkpoints[-1]
         metrics_path = run_dir / "ClinVarEvaluator_metrics.json"
         if metrics_path.exists():
-            print(f"Metrics already present for {run_dir.name}")
+            completed += 1
+            print(f"[{idx}/{total}] Metrics already present for {run_dir.name}")
             continue
 
         cmd = [
@@ -76,8 +80,10 @@ def main() -> None:
             "--output",
             str(metrics_path),
         ]
-        print(f"Evaluating {run_dir.name} on {args.device}...")
+        print(f"[{idx}/{total}] Evaluating {run_dir.name} on {args.device}...")
         subprocess.run(cmd, check=True)
+        completed += 1
+        print(f"[{idx}/{total}] Completed {run_dir.name} (total completed: {completed}/{total})")
 
 
 if __name__ == "__main__":
