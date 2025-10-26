@@ -6,9 +6,13 @@ import json
 from pathlib import Path
 
 import csv
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
+try:
+    import pandas as pd
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+except ImportError:  # optional plotting dependencies
+    pd = sns = plt = None
+
 import yaml
 
 SWEEP_ROOT = Path("checkpoints/Clinvar_trm-ACT-torch")
@@ -72,19 +76,22 @@ def main() -> None:
         writer.writerows(finished)
     print("Summary saved to sweep_summary.csv")
 
-    df = pd.DataFrame(finished)
-    try:
-        plt.figure(figsize=(10, 6))
-        pivot = df.pivot_table(index="hidden_size", columns=["L_layers", "L_cycles", "lr"], values="roc_auc")
-        sns.heatmap(pivot, annot=True, fmt=".4f", cmap="viridis")
-        plt.title("ClinVar Sweep ROC AUC")
-        plt.tight_layout()
-        OUTPUT_FIG.parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(OUTPUT_FIG, dpi=200)
-        plt.close()
-        print(f"Saved heatmap to {OUTPUT_FIG}")
-    except Exception as exc:  # pylint: disable=broad-except
-        print("Unable to render heatmap:", exc)
+    if pd is not None and sns is not None and plt is not None:
+        try:
+            df = pd.DataFrame(finished)
+            plt.figure(figsize=(10, 6))
+            pivot = df.pivot_table(index="hidden_size", columns=["L_layers", "L_cycles", "lr"], values="roc_auc")
+            sns.heatmap(pivot, annot=True, fmt=".4f", cmap="viridis")
+            plt.title("ClinVar Sweep ROC AUC")
+            plt.tight_layout()
+            OUTPUT_FIG.parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(OUTPUT_FIG, dpi=200)
+            plt.close()
+            print(f"Saved heatmap to {OUTPUT_FIG}")
+        except Exception as exc:  # pylint: disable=broad-except
+            print("Unable to render heatmap:", exc)
+    else:
+        print("Pandas/Seaborn not installed; skip heatmap generation.")
 
 
 if __name__ == "__main__":
