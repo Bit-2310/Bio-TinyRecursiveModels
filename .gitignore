@@ -105,3 +105,4 @@ wandb/
 checkpoints/
 # Local reference files
 Instructions.md
+donot_commit.txt
