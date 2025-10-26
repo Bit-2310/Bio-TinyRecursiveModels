@@ -106,3 +106,4 @@ checkpoints/
 # Local reference files
 Instructions.md
 donot_commit.txt
+.sweep_todo.md
