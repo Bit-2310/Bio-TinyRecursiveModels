@@ -23,15 +23,25 @@ def load_run_metrics(run_dir: Path) -> dict:
         metrics = {}
     cfg = yaml.safe_load((run_dir / "all_config.yaml").read_text())
 
+    roc_auc = metrics.get("ClinVar/roc_auc")
+    if roc_auc is None:
+        roc_auc = metrics.get("roc_auc")
+    accuracy = metrics.get("ClinVar/accuracy")
+    if accuracy is None:
+        accuracy = metrics.get("accuracy")
+
+    checkpoints = sorted(run_dir.glob("step_*"))
+    latest_checkpoint = str(checkpoints[-1]) if checkpoints else ""
+
     return {
         "run": run_dir.name,
-        "roc_auc": metrics.get("ClinVar/roc_auc"),
-        "accuracy": metrics.get("ClinVar/accuracy"),
+        "roc_auc": roc_auc,
+        "accuracy": accuracy,
         "hidden_size": cfg["arch"]["hidden_size"],
         "L_layers": cfg["arch"]["L_layers"],
         "L_cycles": cfg["arch"]["L_cycles"],
         "lr": cfg["lr"],
-        "checkpoint": str(run_dir / "step_1560"),
+        "checkpoint": latest_checkpoint,
         "config": str(run_dir / "all_config.yaml"),
     }
 
