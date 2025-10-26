@@ -10,32 +10,49 @@ import matplotlib.pyplot as plt
 
 DEFAULT_OUTPUT = Path("docs/figures/clinvar_sweep_heatmap.png")
 
-PALETTES = {
-    "viridis": "viridis",
-    "redblue": "RdBu_r",
-    "reds": "Reds",
-    "custom": ["#4575b4", "#74add1", "#fdae61", "#d73027"]
-}
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", type=Path, default=Path("sweep_summary.csv"))
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--palette", type=str, default="RdBu_r", help="Matplotlib colormap name.")
+    parser.add_argument(
+        "--palette",
+        type=str,
+        default="coolwarm",
+        help="Matplotlib colormap name (diverging palettes like 'coolwarm' or 'RdYlBu_r' work well).",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     df = pd.read_csv(args.csv)
-    pivot = df.pivot_table(values="roc_auc", index="hidden_size", columns=["L_layers", "L_cycles", "lr"])
 
-    plt.figure(figsize=(14, 6))
-    sns.heatmap(pivot, annot=True, fmt=".4f", cmap=args.palette)
+    # Bring columns into a tidy string for readability on the axis
+    df["combo"] = df.apply(
+        lambda r: f"{int(r['L_layers'])}-{int(r['L_cycles'])}-{r['lr']:.4f}".rstrip("0").rstrip("."),
+        axis=1,
+    )
+    pivot = (
+        df.pivot_table(values="roc_auc", index="hidden_size", columns="combo")
+        .sort_index(axis=0)
+        .sort_index(axis=1)
+    )
+
+    sns.set_theme(style="white", context="talk")
+    plt.figure(figsize=(16, 6))
+    heatmap = sns.heatmap(
+        pivot,
+        annot=True,
+        fmt=".4f",
+        cmap=args.palette,
+        vmin=df["roc_auc"].min(),
+        vmax=df["roc_auc"].max(),
+        cbar_kws={"label": "ROC AUC"},
+    )
+    heatmap.set_ylabel("hidden_size")
+    heatmap.set_xlabel("L_layers – L_cycles – lr")
     plt.title("ClinVar Sweep ROC AUC")
-    plt.ylabel("hidden_size")
-    plt.xlabel("(L_layers, L_cycles, lr)")
     plt.tight_layout()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(args.output, dpi=220)
