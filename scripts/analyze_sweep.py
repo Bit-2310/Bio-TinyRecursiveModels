@@ -9,6 +9,7 @@ import csv
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import yaml
 
 SWEEP_ROOT = Path("checkpoints/Clinvar_trm-ACT-torch")
 OUTPUT_FIG = Path("docs/figures/clinvar_sweep_heatmap.png")
@@ -20,7 +21,7 @@ def load_run_metrics(run_dir: Path) -> dict:
         metrics = json.loads(metrics_file.read_text())
     else:
         metrics = {}
-    cfg = json.loads((run_dir / "all_config.yaml").read_text())
+    cfg = yaml.safe_load((run_dir / "all_config.yaml").read_text())
 
     return {
         "run": run_dir.name,
