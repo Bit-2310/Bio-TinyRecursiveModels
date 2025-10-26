@@ -244,8 +244,6 @@ def main() -> None:
                 f.write(json.dumps(record) + "\n")
 
 
-if __name__ == "__main__":
-    main()
 def _move_carry_to_device(
     carry: TinyRecursiveReasoningModel_ACTV1Carry,
     device: torch.device,
@@ -256,3 +254,7 @@ def _move_carry_to_device(
     carry.halted = carry.halted.to(device)
     carry.current_data = {k: v.to(device) for k, v in carry.current_data.items()}
     return carry
+
+
+if __name__ == "__main__":
+    main()
