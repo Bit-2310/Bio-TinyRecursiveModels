@@ -172,6 +172,10 @@
 - `python scripts/analyze_sweep.py` highlights best config `hidden_size=384`, `L_layers=2`, `L_cycles=2`, `lr=3e-4` with ROC AUC 0.9513 and accuracy 0.8867 (checkpoint `step_9372`).
 - Sweep summary saved to `sweep_summary.csv`; heatmap generation skipped (pandas/seaborn unavailable in sandbox).
 
+2025-10-26, 15:30 : Best-config TRM run (384 hidden, 2×2 cycles, lr=3e-4)
+- Run `clinvar_long_best384_20251026-140402` reached ROC AUC 0.9513, accuracy 0.8867 on the 20k test split; parameter count ≈17.0M.
+- Artifacts: `outputs/clinvar_long_best384_20251026-140402_{metrics,predictions}.jsonl`, plots refreshed under `docs/figures/`.
+
 2025-10-25, 17:45 : Sweep preparation
 - Added explicit `run_name` / `checkpoint_path` templating to `config/clinvar_sweep.yaml` so each Hydra job writes to its own folder (`checkpoints/Clinvar_trm-ACT-torch/<override_dirname>`).
 - README now documents the sweep command with `WANDB_DISABLED=true` and `TINYVARIANT_NUM_WORKERS=0` for smoother offline runs.

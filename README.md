@@ -1,9 +1,6 @@
 # TinyVariant: tiny recursion meets variant pathogenicity
 
-![Python](https://img.shields.io/badge/python-3.10-blue.svg)
-![PyTorch](https://img.shields.io/badge/pytorch-2.0%2B-red.svg)
-![Status](https://img.shields.io/badge/status-proof_of_concept-orange.svg)
-![Hardware](https://img.shields.io/badge/hardware-RTX%203050-lightgrey.svg)
+Python 3.10 · PyTorch 2.0+ · Status: proof of concept · Hardware: RTX 3050
 
 Hello! This repo started life as a fork of Samsung SAIT Montréal’s
 **Tiny Recursive Models** project, the ARC-AGI puzzle solver. I wanted to see
@@ -12,9 +9,7 @@ biological: guessing whether a DNA variant is pathogenic. Rather than rewrite
 everything from scratch, I’m keeping the original TRM plumbing and layering a
 bioinformatics proof of concept on top.
 
-**Objective — prove that a slimmed-down TRM can break 60 % accuracy on a
-ClinVar pathogenic vs benign classification task using nothing fancier than
-an RTX 3050.**
+**Objective — break 60 % accuracy (now ~0.887) on ClinVar pathogenic vs benign classification with an RTX 3050.**
 
 > The core training loop, halting logic, and attention layout follow Samsung
 > SAIT Montréal’s Tiny Recursive Models. We keep their architecture intact
@@ -27,11 +22,11 @@ a variant-analysis toolkit; if not, we pivot with a clear conscience.
 
 ## Where things stand right now
 
-- ✅ Confirmed the base TRM code runs locally (no more adam-atan2 headaches).
-- ✅ Built a mini ARC dataset (800 puzzles) to make sure the training loop,
+- Confirmed the base TRM code runs locally (no more adam-atan2 headaches).
+- Built a mini ARC dataset (800 puzzles) to make sure the training loop,
   logging, and checkpointing play nicely with 4 GB of VRAM.
-- ✅ Logged the whole bring-up story in `biotrm_progress_log.txt`.
-- 🔄 Next up: swap in ClinVar data, craft a VariantTRM model, and push for that
+- Logged the whole bring-up story in `biotrm_progress_log.txt`.
+- Next up: swap in ClinVar data, craft a VariantTRM model, and push for that
   60 % accuracy milestone.
 
 ---
@@ -139,6 +134,7 @@ a variant-analysis toolkit; if not, we pivot with a clear conscience.
     python scripts/analyze_sweep.py
     ```
     Review `sweep_summary.csv` to identify stronger architectures (wider hidden size, deeper L_cycles) for the 50k dataset.
+    Current best (Oct 2025): hidden_size=384, L_layers=2, L_cycles=2, lr=3e-4 → ROC AUC ≈ 0.951, accuracy ≈ 0.887, ~17M parameters.
     Current best sweep run (Oct 2025): `hidden_size=384`, `L_layers=2`, `L_cycles=2`, `lr=3e-4` (ROC AUC ≈ 0.951, accuracy ≈ 0.887).
 
 12. Further analysis (optional)
