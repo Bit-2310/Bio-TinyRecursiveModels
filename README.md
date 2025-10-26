@@ -139,6 +139,7 @@ a variant-analysis toolkit; if not, we pivot with a clear conscience.
     python scripts/analyze_sweep.py
     ```
     Review `sweep_summary.csv` to identify stronger architectures (wider hidden size, deeper L_cycles) for the 50k dataset.
+    Current best sweep run (Oct 2025): `hidden_size=384`, `L_layers=2`, `L_cycles=2`, `lr=3e-4` (ROC AUC ≈ 0.951, accuracy ≈ 0.887).
 
 12. Further analysis (optional)
     - **Feature ablation comparison** – after running phenotype/provenance ablations, compare `outputs/*_metrics.json` files to quantify each feature family’s contribution.
