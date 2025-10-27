@@ -165,10 +165,4 @@ The takeaway: the recursive reasoning stack ports successfully, but on ClinVar m
 
 ---
 
-## What’s next?
-
-- **Documentation** — this repository now records a clear result: TRM-style recursion did not outperform a linear baseline on ClinVar missense pathogenicity, and the full path to that conclusion is ready to share (perfect material for a blog post or case study).
-- **Analysis ideas** — explore per-phenotype / per-gene error slices, temporal hold-out splits, or calibration curves if you want to squeeze more insight out of the data before pivoting.
-- **Future hypotheses** — aim the recursion core at problems that genuinely need multi-step reasoning (iterative diagnosis, causal graph tracing, puzzle-like variant annotation) or experiment with hybrid encoders that keep the feature pipeline but drop halting.
-
 Questions, ideas, or words of caution? Pop them into the issue tracker or reach out directly. Thanks for following the TinyVariant proof-of-concept all the way to its conclusion.
